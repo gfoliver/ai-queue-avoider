@@ -4,14 +4,15 @@ import {MdSend} from 'react-icons/md';
 import Text from './Text';
 import api from '../services/api';
 
-interface HistoryItem {
-  text: string;
-  from: 'ai'|'user';
+interface IAnswer {
+  message: string;
+  from: string;
+  isTip: boolean;
 }
 
 function Chat() {
   const [query, setQuery] = React.useState('');
-  const [history, setHistory] = React.useState<HistoryItem[]>([]);
+  const [history, setHistory] = React.useState<IAnswer[]>([]);
   const [thinking, setThinking] = React.useState(false);
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
@@ -21,8 +22,9 @@ function Chat() {
       return;
 
     setHistory(his => [...his, {
-      text: query,
-      from: 'user'
+      message: query,
+      from: 'user',
+      isTip: false
     }]);
 
     setThinking(true);
@@ -34,12 +36,12 @@ function Chat() {
   }
 
   const askAi = () => {
-    api.get('/ask', {params: {question: query}})
+    api.get<{answers: IAnswer[]}>('/ask', {params: { question: query }})
         .then(response => {
             const {answers} = response.data;
             setHistory(his => [
-                ...his, 
-                ...answers.map((answer: string) => ({ text: answer, from: 'ai' }))
+                ...his,
+                ...answers.map(ans => ({...ans, from: 'ai'}))
             ]);
         })
         .catch(error => {
@@ -55,18 +57,18 @@ function Chat() {
           <h1 className="text-3xl text-center text-light font-bold mb-8">Evite Filas!</h1>
           <div className="history max-w-3xl mx-auto">
             {history.map((item, index) => (
-                <Text key={index} isAnswer={item.from === 'ai'}>
-                {item.text}
+                <Text key={index} isAnswer={item.from === 'ai'} isTip={item.isTip}>
+                {item.message}
                 </Text>
             ))}
+            {thinking && (
+              <div className="flex">
+                <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
+                <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
+                <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
+              </div>
+            )}
           </div>
-          {thinking && (
-            <div className="flex">
-              <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
-              <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
-              <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
-            </div>
-          )}
         </div>
       </div>
       <div className="bottom bg-bar py-8">
@@ -80,6 +82,7 @@ function Chat() {
                     onChange={e => setQuery(e.target.value)}
                     value={query}
                     disabled={thinking}
+                    autoComplete="off"
                     />
                     <button type="submit" disabled={thinking}>
                     <MdSend className="text-user absolute right-4 top-1/2 -translate-y-1/2" />
