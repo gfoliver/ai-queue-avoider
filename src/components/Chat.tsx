@@ -1,5 +1,6 @@
 import React, { FormEvent } from 'react';
 import {MdSend} from 'react-icons/md';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 
 import Text from './Text';
 import api from '../services/api';
@@ -14,6 +15,8 @@ function Chat() {
   const [query, setQuery] = React.useState('');
   const [history, setHistory] = React.useState<IAnswer[]>([]);
   const [thinking, setThinking] = React.useState(false);
+  const [parent] = useAutoAnimate();
+  const endRef = React.useRef<HTMLDivElement>(null);
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,6 +32,9 @@ function Chat() {
 
     setThinking(true);
     setTimeout(() => {
+        if (endRef.current)
+          endRef.current.scrollIntoView({ behavior: 'smooth' });
+
         askAi();
     }, 1000);
     
@@ -43,6 +49,9 @@ function Chat() {
                 ...his,
                 ...answers.map(ans => ({...ans, from: 'ai'}))
             ]);
+
+            if (endRef.current)
+                endRef.current.scrollIntoView({ behavior: 'smooth' });
         })
         .catch(error => {
             console.log(error)
@@ -55,7 +64,7 @@ function Chat() {
       <div className="answers flex-grow overflow-auto">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl text-center text-light font-bold mb-8">Evite Filas!</h1>
-          <div className="history max-w-3xl mx-auto">
+          <div className="history max-w-3xl mx-auto scroll-smooth" ref={parent}>
             {history.map((item, index) => (
                 <Text key={index} isAnswer={item.from === 'ai'} isTip={item.isTip}>
                 {item.message}
@@ -68,6 +77,8 @@ function Chat() {
                 <div className="rounded-full bg-light w-2 h-2 mr-1 animate-bounce" />
               </div>
             )}
+            <div className="pb-20" />
+            <div ref={endRef} />
           </div>
         </div>
       </div>
